@@ -1,0 +1,1113 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hasil Laporan DM Humas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@500;600;700&family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<style>
+  :root{
+    --navy: #16233F;
+    --navy-light: #223357;
+    --maroon: #9C1D2E;
+    --maroon-light: #B84358;
+    --gold: #C9A227;
+    --cream: #F6F3EC;
+    --paper: #FFFFFF;
+    --ink: #1E2430;
+    --muted: #6B7280;
+    --line: #E4DFD3;
+    --green: #2F7A4F;
+    --radius: 10px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--cream);
+    color:var(--ink);
+    font-family:'Inter', sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .topbar{
+    background: linear-gradient(120deg, var(--navy) 0%, var(--navy-light) 60%, var(--navy) 100%);
+    color:#fff;
+    padding:22px 28px 20px;
+    position:relative;
+    overflow:hidden;
+    border-bottom:3px solid var(--gold);
+  }
+  .topbar::after{
+    content:"";
+    position:absolute;
+    inset:0;
+    background-image: repeating-linear-gradient(135deg, rgba(201,162,39,0.07) 0 2px, transparent 2px 16px);
+    pointer-events:none;
+  }
+  .topbar-inner{position:relative; max-width:1100px; margin:0 auto; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;}
+  .eyebrow{
+    font-family:'Space Mono', monospace;
+    font-size:11.5px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--gold);
+    margin:0 0 6px;
+  }
+  h1.title{
+    font-family:'Source Serif 4', serif;
+    font-weight:700;
+    font-size:28px;
+    margin:0;
+    letter-spacing:.01em;
+  }
+  .subtitle{
+    font-size:13px;
+    color:#C9D0DE;
+    margin-top:6px;
+  }
+  .badge-date{
+    font-family:'Space Mono', monospace;
+    font-size:12px;
+    background:rgba(255,255,255,0.08);
+    border:1px solid rgba(201,162,39,0.5);
+    padding:8px 14px;
+    border-radius:20px;
+    color:#EFE6C8;
+  }
+
+  nav.tabs{
+    max-width:1100px;
+    margin:0 auto;
+    display:flex;
+    gap:4px;
+    padding:0 28px;
+    margin-top:-1px;
+    background:var(--cream);
+  }
+  nav.tabs button{
+    font-family:'Inter', sans-serif;
+    font-weight:600;
+    font-size:13.5px;
+    padding:14px 20px 12px;
+    border:none;
+    background:transparent;
+    color:var(--muted);
+    cursor:pointer;
+    border-bottom:3px solid transparent;
+    transition: color .15s, border-color .15s;
+  }
+  nav.tabs button.active{
+    color:var(--maroon);
+    border-bottom:3px solid var(--maroon);
+  }
+  nav.tabs button:hover{ color:var(--navy); }
+
+  main{
+    max-width:1100px;
+    margin:0 auto;
+    padding:26px 28px 60px;
+  }
+  .panel{
+    display:none;
+  }
+  .panel.active{ display:block; animation: fade .25s ease; }
+  @keyframes fade{ from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:translateY(0);} }
+
+  .card{
+    background:var(--paper);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:22px;
+    box-shadow: 0 1px 2px rgba(22,35,63,0.04);
+  }
+  .card + .card{ margin-top:20px; }
+  .card h2{
+    font-family:'Source Serif 4', serif;
+    font-size:18px;
+    margin:0 0 4px;
+    color:var(--navy);
+  }
+  .card .hint{
+    font-size:12.5px;
+    color:var(--muted);
+    margin:0 0 18px;
+  }
+
+  .grid{
+    display:grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap:16px 20px;
+  }
+  @media (max-width:640px){ .grid{ grid-template-columns:1fr; } }
+
+  label{
+    display:block;
+    font-size:12px;
+    font-weight:600;
+    letter-spacing:.02em;
+    text-transform:uppercase;
+    color:var(--navy);
+    margin-bottom:6px;
+  }
+  select, input[type=date], input[type=text]{
+    width:100%;
+    padding:10px 12px;
+    border:1px solid var(--line);
+    border-radius:7px;
+    background:#FCFBF8;
+    font-family:'Inter', sans-serif;
+    font-size:14px;
+    color:var(--ink);
+    appearance:auto;
+  }
+  select:focus, input:focus{
+    outline:2px solid var(--gold);
+    outline-offset:1px;
+    border-color:var(--gold);
+  }
+
+  .actions{ margin-top:20px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;}
+  button.primary{
+    background:var(--maroon);
+    color:#fff;
+    border:none;
+    padding:11px 22px;
+    border-radius:7px;
+    font-weight:600;
+    font-size:13.5px;
+    cursor:pointer;
+    transition:background .15s;
+  }
+  button.primary:hover{ background:var(--maroon-light); }
+  button.ghost{
+    background:transparent;
+    border:1px solid var(--line);
+    color:var(--navy);
+    padding:10px 18px;
+    border-radius:7px;
+    font-weight:600;
+    font-size:13px;
+    cursor:pointer;
+  }
+  button.ghost:hover{ border-color:var(--navy); }
+  #saveMsg{
+    font-size:12.5px;
+    color:var(--green);
+    font-weight:600;
+    opacity:0;
+    transition:opacity .3s;
+  }
+  #saveMsg.show{ opacity:1; }
+
+  .filter-row{ display:flex; gap:14px; align-items:end; flex-wrap:wrap; margin-bottom:18px;}
+  .filter-row .field{ min-width:190px; }
+  .count-pill{
+    font-family:'Space Mono', monospace;
+    font-size:12px;
+    background:var(--cream);
+    border:1px solid var(--line);
+    padding:7px 12px;
+    border-radius:20px;
+    color:var(--navy);
+    white-space:nowrap;
+  }
+
+  table{
+    width:100%;
+    border-collapse:collapse;
+    font-size:13.5px;
+  }
+  thead th{
+    text-align:left;
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:.05em;
+    color:var(--muted);
+    border-bottom:2px solid var(--line);
+    padding:9px 10px;
+    font-weight:700;
+  }
+  tbody td{
+    padding:10px 10px;
+    border-bottom:1px solid var(--line);
+    vertical-align:top;
+  }
+  tbody tr:hover{ background:#FAF8F2; }
+  .tag{
+    display:inline-block;
+    padding:3px 9px;
+    border-radius:20px;
+    font-size:11.5px;
+    font-weight:600;
+  }
+  .tag.selesai{ background:#E4F3E9; color:var(--green); }
+  .tag.diteruskan{ background:#FDEBD3; color:#8A5A0A; }
+  .platform-ig{color:#C13584;font-weight:600;}
+  .platform-yt{color:#CC181E;font-weight:600;}
+  .platform-tt{color:#111;font-weight:600;}
+  .platform-fb{color:#1877F2;font-weight:600;}
+  .platform-x{color:#111;font-weight:600;}
+  .del-btn{
+    border:none;background:transparent;color:#B0453F;cursor:pointer;font-size:12px;font-weight:600;
+  }
+  .del-btn:hover{ text-decoration:underline; }
+  .empty-state{
+    text-align:center;
+    padding:40px 10px;
+    color:var(--muted);
+    font-size:13.5px;
+  }
+
+  .charts-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:20px;
+  }
+  .charts-grid-3{
+    grid-template-columns: repeat(3, 1fr);
+  }
+  @media (max-width:760px){ .charts-grid{ grid-template-columns:1fr; } }
+  @media (max-width:980px){ .charts-grid-3{ grid-template-columns: 1fr 1fr; } }
+  @media (max-width:640px){ .charts-grid-3{ grid-template-columns: 1fr; } }
+  .chart-wrap{ position:relative; height:300px; }
+  .chart-total{
+    position:absolute;
+    top:50%; left:50%;
+    transform:translate(-50%,-50%);
+    text-align:center;
+    pointer-events:none;
+  }
+  .chart-total .num{
+    font-family:'Space Mono', monospace;
+    font-size:26px;
+    font-weight:700;
+    color:var(--navy);
+    display:block;
+  }
+  .chart-total .lbl{
+    font-size:10.5px;
+    color:var(--muted);
+    text-transform:uppercase;
+    letter-spacing:.06em;
+  }
+  .legend-list{
+    margin-top:14px;
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+  }
+  .legend-item{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    font-size:12.5px;
+  }
+  .legend-item .dot{
+    width:9px;height:9px;border-radius:50%;display:inline-block;margin-right:8px;
+  }
+  .legend-item .lbl{ display:flex; align-items:center; color:var(--ink);}
+  .legend-item .val{ font-family:'Space Mono', monospace; color:var(--muted); }
+
+  footer{
+    text-align:center;
+    padding:24px;
+    font-size:11.5px;
+    color:var(--muted);
+    font-family:'Space Mono', monospace;
+  }
+  .storage-note{
+    font-size:11.5px;
+    color:var(--muted);
+    margin-top:10px;
+  }
+  .conn-banner{
+    max-width:1100px;
+    margin:14px auto 0;
+    padding:0 28px;
+    font-family:'Space Mono', monospace;
+    font-size:12px;
+  }
+  .conn-banner .pill{
+    display:inline-flex;
+    align-items:center;
+    gap:7px;
+    padding:6px 13px;
+    border-radius:20px;
+    border:1px solid var(--line);
+    background:#fff;
+  }
+  .conn-banner .dot{ width:8px; height:8px; border-radius:50%; }
+  .conn-banner.ok .dot{ background:var(--green); }
+  .conn-banner.ok .pill{ border-color:#CFE8D8; color:var(--green); }
+  .conn-banner.warn .dot{ background:var(--maroon); }
+  .conn-banner.warn .pill{ border-color:#F0D4D4; color:var(--maroon); }
+
+  #accessGate{
+    position:fixed; inset:0; z-index:999;
+    background: linear-gradient(120deg, var(--navy) 0%, var(--navy-light) 60%, var(--navy) 100%);
+    display:flex; align-items:center; justify-content:center;
+    padding:20px;
+  }
+  #accessGate .gate-card{
+    background:var(--paper);
+    border-radius:var(--radius);
+    padding:32px 28px;
+    max-width:340px;
+    width:100%;
+    text-align:center;
+    box-shadow:0 10px 40px rgba(0,0,0,0.25);
+  }
+  #accessGate h2{
+    font-family:'Source Serif 4', serif;
+    color:var(--navy);
+    margin:0 0 6px;
+    font-size:19px;
+  }
+  #accessGate p{
+    font-size:12.5px;
+    color:var(--muted);
+    margin:0 0 18px;
+  }
+  #accessGate input{
+    text-align:center;
+    letter-spacing:.08em;
+    margin-bottom:12px;
+  }
+  #accessGate .gate-error{
+    font-size:12px;
+    color:var(--maroon);
+    margin:-4px 0 12px;
+    min-height:14px;
+  }
+  #accessGate button{ width:100%; }
+  #appRoot{ display:none; }
+  #appRoot.ready{ display:block; }
+</style>
+</head>
+<body>
+
+<div id="accessGate">
+  <div class="gate-card">
+    <h2>Akses Petugas</h2>
+    <p>Masukkan kode akses untuk membuka formulir Hasil Laporan DM Humas.</p>
+    <input type="text" id="gateCode" placeholder="Kode akses" autocomplete="off">
+    <div class="gate-error" id="gateError"></div>
+    <button class="primary" id="gateBtn">Masuk</button>
+  </div>
+</div>
+
+<div id="appRoot">
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div>
+      <p class="eyebrow">Direktorat Jenderal Kekayaan Intelektual · Humas</p>
+      <h1 class="title">Hasil Laporan DM Humas</h1>
+      <p class="subtitle">Pencatatan laporan pesan masuk (DM) media sosial DJKI</p>
+    </div>
+    <div class="badge-date">Mulai dicatat: 01 Juli 2026</div>
+  </div>
+</div>
+
+<nav class="tabs">
+  <button class="tab-btn active" data-tab="input">Input Data</button>
+  <button class="tab-btn" data-tab="hasil">Hasil Data</button>
+  <button class="tab-btn" data-tab="statistik">Statistik</button>
+</nav>
+
+<div id="connBanner" class="conn-banner"></div>
+
+<main>
+
+  <!-- ===================== INPUT ===================== -->
+  <section class="panel active" id="panel-input">
+    <div class="card">
+      <h2>Formulir Input Laporan</h2>
+      <p class="hint">Isi rincian laporan DM yang masuk pada tanggal terkait. Data akan tersimpan otomatis.</p>
+
+      <div class="grid">
+        <div class="field">
+          <label for="f-tanggal">Tanggal</label>
+          <input type="date" id="f-tanggal">
+        </div>
+        <div class="field">
+          <label for="f-jenis">Jenis Laporan</label>
+          <select id="f-jenis">
+            <option>Informasi Pendaftaran</option>
+            <option>Informasi Pasca Pendaftaran</option>
+            <option>Informasi Download Sertifikat</option>
+            <option>Informasi Status Pemeriksaan</option>
+            <option>Informasi Koreksi Data Sertifikat</option>
+            <option>Web Error</option>
+            <option>Login Error</option>
+            <option>Email Error</option>
+            <option>Informasi Pembayaran PNBP</option>
+            <option>Informasi Kode Billing</option>
+            <option>Informasi Magang</option>
+            <option>Informasi Kerjasama KI</option>
+            <option>Informasi Wawancara Narasumber</option>
+            <option>Informasi Umum KI</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="f-rezim">Rezim</label>
+          <select id="f-rezim">
+            <option>Hak Cipta</option>
+            <option>Merek</option>
+            <option>Paten</option>
+            <option>Desain Industri</option>
+            <option>KIK</option>
+            <option>DTLST</option>
+            <option>IG</option>
+            <option>Lainnya</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="f-jumlah">Jumlah</label>
+          <select id="f-jumlah">
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+            <option value="5">5</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="f-status">Status</label>
+          <select id="f-status">
+            <option>Selesai</option>
+            <option>Sudah Diteruskan</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="f-platform">Platform</label>
+          <select id="f-platform">
+            <option>Instagram</option>
+            <option>Youtube</option>
+            <option>Tiktok</option>
+            <option>Facebook</option>
+            <option>X</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="primary" id="btnSimpan">Simpan Laporan</button>
+        <span id="saveMsg">Tersimpan ✓</span>
+      </div>
+      <p class="storage-note" id="storageNote"></p>
+    </div>
+  </section>
+
+  <!-- ===================== HASIL ===================== -->
+  <section class="panel" id="panel-hasil">
+    <div class="card">
+      <h2>Hasil Data</h2>
+      <p class="hint">Lihat laporan yang telah diinput berdasarkan tanggal.</p>
+
+      <div class="filter-row">
+        <div class="field">
+          <label for="hasil-tanggal">Filter Tanggal</label>
+          <input type="date" id="hasil-tanggal">
+        </div>
+        <button class="ghost" id="btnSemuaTanggal">Tampilkan Semua</button>
+        <span class="count-pill" id="hasilCount">0 laporan</span>
+        <div style="flex:1"></div>
+        <button class="ghost" id="btnCetakAbangku">🖨 CETAK ABANGKU</button>
+        <button class="ghost" id="btnBackup">⬇ Unduh Backup (JSON)</button>
+        <button class="ghost" id="btnImportTrigger">⬆ Muat dari Backup</button>
+        <input type="file" id="importFile" accept="application/json" style="display:none;">
+      </div>
+
+      <div style="overflow-x:auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>Tanggal</th>
+              <th>Jenis Laporan</th>
+              <th>Rezim</th>
+              <th>Jumlah</th>
+              <th>Status</th>
+              <th>Platform</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="hasilBody"></tbody>
+        </table>
+        <div class="empty-state" id="hasilEmpty">Belum ada data untuk ditampilkan.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== STATISTIK ===================== -->
+  <section class="panel" id="panel-statistik">
+    <div class="card">
+      <h2>Statistik Laporan</h2>
+      <p class="hint">Persentase dihitung dari total Jumlah laporan (bobot kolom "Jumlah").</p>
+
+      <div class="filter-row">
+        <div class="field">
+          <label for="stat-dari">Dari Tanggal</label>
+          <input type="date" id="stat-dari">
+        </div>
+        <div class="field">
+          <label for="stat-sampai">Sampai Tanggal</label>
+          <input type="date" id="stat-sampai">
+        </div>
+        <button class="ghost" id="btnStatReset">Reset (Semua Data)</button>
+      </div>
+
+      <div class="charts-grid charts-grid-3">
+        <div>
+          <h2 style="font-size:14px; margin-bottom:2px;">Berdasarkan Rezim</h2>
+          <div class="chart-wrap">
+            <canvas id="chartRezim"></canvas>
+            <div class="chart-total"><span class="num" id="totalRezim">0</span><span class="lbl">Total</span></div>
+          </div>
+          <div class="legend-list" id="legendRezim"></div>
+        </div>
+        <div>
+          <h2 style="font-size:14px; margin-bottom:2px;">Berdasarkan Platform</h2>
+          <div class="chart-wrap">
+            <canvas id="chartPlatform"></canvas>
+            <div class="chart-total"><span class="num" id="totalPlatform">0</span><span class="lbl">Total</span></div>
+          </div>
+          <div class="legend-list" id="legendPlatform"></div>
+        </div>
+        <div>
+          <h2 style="font-size:14px; margin-bottom:2px;">Berdasarkan Status</h2>
+          <div class="chart-wrap">
+            <canvas id="chartStatus"></canvas>
+            <div class="chart-total"><span class="num" id="totalStatus">0</span><span class="lbl">Total</span></div>
+          </div>
+          <div class="legend-list" id="legendStatus"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>DJKI · Kementerian Hukum RI — Alat Pencatatan Internal Humas</footer>
+
+</div><!-- /#appRoot -->
+
+<script>
+const MIN_DATE = "2026-07-01";
+const ACCESS_CODE = "djki2026"; // Ganti kode akses bersama di sini
+const ACCESS_FLAG_KEY = "dm_humas_access_ok_v1";
+let entries = [];
+
+// ---------- Firebase ----------
+const firebaseConfig = {
+  apiKey: "AIzaSyDLUIntQNb6FAK7zSkrHoAhTMxdbH-W0h8",
+  authDomain: "dm-humas-djki.firebaseapp.com",
+  projectId: "dm-humas-djki",
+  storageBucket: "dm-humas-djki.firebasestorage.app",
+  messagingSenderId: "748305352877",
+  appId: "1:748305352877:web:2f479190fdb40849c99e24"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+const COLLECTION = "laporan_dm";
+let unsubscribeEntries = null;
+
+const REZIM_COLORS = {
+  "Hak Cipta": "#9C1D2E",
+  "Merek": "#C9A227",
+  "Paten": "#16233F",
+  "Desain Industri": "#2F7A4F",
+  "KIK": "#B84358",
+  "DTLST": "#5B7FA6",
+  "IG": "#8A5A0A",
+  "Lainnya": "#8A8578"
+};
+const STATUS_COLORS = {
+  "Selesai": "#2F7A4F",
+  "Sudah Diteruskan": "#C9A227"
+};
+const PLATFORM_COLORS = {
+  "Instagram": "#C13584",
+  "Youtube": "#CC181E",
+  "Tiktok": "#1F2937",
+  "Facebook": "#1877F2",
+  "X": "#8A93A6"
+};
+
+function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+
+function updateConnBanner(status, text){
+  const el = document.getElementById('connBanner');
+  el.className = 'conn-banner ' + status;
+  el.innerHTML = `<span class="pill"><span class="dot"></span>${text}</span>`;
+}
+
+function loadEntries(){
+  updateConnBanner('warn', 'Menyambungkan ke Firebase...');
+  document.getElementById('storageNote').textContent =
+    "Data disimpan di Firebase (Firestore) dan tersinkron real-time untuk semua petugas. Gunakan tombol Unduh Backup secara berkala sebagai cadangan.";
+
+  if(unsubscribeEntries) unsubscribeEntries();
+  unsubscribeEntries = db.collection(COLLECTION).onSnapshot((snapshot)=>{
+    entries = snapshot.docs.map(d=>{
+      const data = d.data();
+      return {
+        id: d.id,
+        tanggal: data.tanggal,
+        jenis: data.jenis,
+        rezim: data.rezim,
+        jumlah: data.jumlah,
+        status: data.status,
+        platform: data.platform
+      };
+    });
+    updateConnBanner('ok', 'Tersambung ke Firebase');
+    renderHasil();
+    renderStatistik();
+  }, (err)=>{
+    console.error('Gagal menyambung ke Firestore', err);
+    updateConnBanner('warn', 'Gagal menyambung ke Firebase');
+  });
+}
+
+function addEntryToDb(entry){
+  return db.collection(COLLECTION).add({
+    tanggal: entry.tanggal,
+    jenis: entry.jenis,
+    rezim: entry.rezim,
+    jumlah: entry.jumlah,
+    status: entry.status,
+    platform: entry.platform,
+    dibuatPada: firebase.firestore.FieldValue.serverTimestamp()
+  });
+}
+
+function deleteEntriesFromDb(ids){
+  const batch = db.batch();
+  ids.forEach(id=> batch.delete(db.collection(COLLECTION).doc(id)));
+  return batch.commit();
+}
+
+function downloadBackup(){
+  const blob = new Blob([JSON.stringify(entries, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const tgl = new Date().toISOString().slice(0,10);
+  a.href = url;
+  a.download = `backup_dm_humas_${tgl}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function importBackup(file){
+  const reader = new FileReader();
+  reader.onload = (e)=>{
+    try{
+      const imported = JSON.parse(e.target.result);
+      if(!Array.isArray(imported)) throw new Error('Format file tidak sesuai');
+
+      // Dedupe terhadap data yang sudah ada di Firebase saat ini,
+      // berdasarkan kombinasi tanggal+jenis+rezim+jumlah+status+platform.
+      const existingKeys = new Set(entries.map(groupKey));
+      const toAdd = imported.filter(item=>{
+        if(!item || !item.tanggal) return false;
+        return !existingKeys.has(groupKey(item));
+      });
+
+      if(toAdd.length === 0){
+        alert('Tidak ada laporan baru untuk dimuat (semua data sudah ada).');
+        return;
+      }
+
+      const batch = db.batch();
+      toAdd.forEach(item=>{
+        const ref = db.collection(COLLECTION).doc();
+        batch.set(ref, {
+          tanggal: item.tanggal,
+          jenis: item.jenis,
+          rezim: item.rezim,
+          jumlah: item.jumlah,
+          status: item.status,
+          platform: item.platform,
+          dibuatPada: firebase.firestore.FieldValue.serverTimestamp()
+        });
+      });
+      batch.commit()
+        .then(()=> alert(`Berhasil memuat ${toAdd.length} laporan baru dari backup ke Firebase.`))
+        .catch(err=>{
+          console.error(err);
+          alert('Gagal memuat backup ke Firebase: ' + err.message);
+        });
+    }catch(err){
+      alert('Gagal membaca file backup: ' + err.message);
+    }
+  };
+  reader.readAsText(file);
+}
+
+function flashSaved(){
+  const el = document.getElementById('saveMsg');
+  el.classList.add('show');
+  setTimeout(()=> el.classList.remove('show'), 1600);
+}
+
+// ---------- Tabs ----------
+document.querySelectorAll('.tab-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('panel-'+btn.dataset.tab).classList.add('active');
+    if(btn.dataset.tab === 'hasil') renderHasil();
+    if(btn.dataset.tab === 'statistik') renderStatistik();
+  });
+});
+
+// ---------- Input ----------
+const tanggalInput = document.getElementById('f-tanggal');
+tanggalInput.min = MIN_DATE;
+(function initDate(){
+  const today = new Date().toISOString().slice(0,10);
+  tanggalInput.value = today >= MIN_DATE ? today : MIN_DATE;
+})();
+
+document.getElementById('btnSimpan').addEventListener('click', (e)=>{
+  const tanggal = tanggalInput.value;
+  if(!tanggal){ alert('Mohon pilih tanggal terlebih dahulu.'); return; }
+  if(tanggal < MIN_DATE){ alert('Tanggal input dimulai dari 1 Juli 2026.'); return; }
+
+  const entry = {
+    tanggal,
+    jenis: document.getElementById('f-jenis').value,
+    rezim: document.getElementById('f-rezim').value,
+    jumlah: parseInt(document.getElementById('f-jumlah').value, 10),
+    status: document.getElementById('f-status').value,
+    platform: document.getElementById('f-platform').value
+  };
+
+  const btn = e.currentTarget;
+  btn.disabled = true;
+  addEntryToDb(entry)
+    .then(()=>{ flashSaved(); })
+    .catch(err=>{
+      console.error('Gagal menyimpan ke Firebase', err);
+      alert('Gagal menyimpan laporan ke Firebase. Periksa koneksi internet Anda lalu coba lagi.');
+    })
+    .finally(()=>{ btn.disabled = false; });
+});
+
+// ---------- Hasil ----------
+const hasilTanggal = document.getElementById('hasil-tanggal');
+hasilTanggal.min = MIN_DATE;
+
+document.getElementById('btnSemuaTanggal').addEventListener('click', ()=>{
+  hasilTanggal.value = '';
+  renderHasil();
+});
+hasilTanggal.addEventListener('change', renderHasil);
+
+function cetakAbangku(){
+  if(lastDisplayRows.length === 0){
+    alert('Tidak ada data untuk dicetak pada tampilan saat ini.');
+    return;
+  }
+
+  const filterDate = hasilTanggal.value;
+  const judulTanggal = filterDate ? formatTanggal(filterDate) : 'Semua Tanggal';
+
+  const headers = ['Tanggal', 'Jenis Laporan', 'Rezim', 'Jumlah', 'Status', 'Platform'];
+  const rowsData = lastDisplayRows.map(e => [
+    formatTanggal(e.tanggal),
+    e.jenis,
+    e.rezim,
+    String(e.jumlah),
+    e.status,
+    e.platform
+  ]);
+
+  // Hitung lebar kolom otomatis agar rapi
+  const widths = headers.map((h, i) =>
+    Math.max(h.length, ...rowsData.map(r => r[i].length))
+  );
+  const padRow = (cols) => cols.map((c, i) => c.padEnd(widths[i] + 2)).join('');
+
+  let out = '';
+  out += 'HASIL LAPORAN DM HUMAS\n';
+  out += 'Direktorat Jenderal Kekayaan Intelektual - Humas\n';
+  out += `Periode: ${judulTanggal}\n`;
+  out += `Dicetak pada: ${new Date().toLocaleString('id-ID')}\n`;
+  out += '='.repeat(widths.reduce((a,b)=>a+b+2,0)) + '\n\n';
+  out += padRow(headers) + '\n';
+  out += '-'.repeat(widths.reduce((a,b)=>a+b+2,0)) + '\n';
+  rowsData.forEach(r => { out += padRow(r) + '\n'; });
+  out += '-'.repeat(widths.reduce((a,b)=>a+b+2,0)) + '\n';
+  out += `Total baris: ${rowsData.length}\n`;
+  out += `Total jumlah laporan: ${rowsData.reduce((a,r)=>a+parseInt(r[3],10),0)}\n`;
+
+  const blob = new Blob([out], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const tgl = new Date().toISOString().slice(0,10);
+  a.href = url;
+  a.download = `hasil_laporan_dm_humas_${tgl}.txt`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+document.getElementById('btnCetakAbangku').addEventListener('click', cetakAbangku);
+document.getElementById('btnBackup').addEventListener('click', downloadBackup);
+document.getElementById('btnImportTrigger').addEventListener('click', ()=>{
+  document.getElementById('importFile').click();
+});
+document.getElementById('importFile').addEventListener('change', (e)=>{
+  const file = e.target.files[0];
+  if(file) importBackup(file);
+  e.target.value = '';
+});
+
+function statusTagClass(status){
+  return status === 'Selesai' ? 'selesai' : 'diteruskan';
+}
+function platformClass(p){
+  return { Instagram:'platform-ig', Youtube:'platform-yt', Tiktok:'platform-tt', Facebook:'platform-fb', X:'platform-x' }[p] || '';
+}
+
+function groupKey(e){
+  return [e.tanggal, e.jenis, e.rezim, e.status, e.platform].join('|');
+}
+
+let lastDisplayRows = [];
+
+function renderHasil(){
+  const filterDate = hasilTanggal.value;
+  const rows = entries
+    .filter(e => !filterDate || e.tanggal === filterDate)
+    .sort((a,b)=> b.tanggal.localeCompare(a.tanggal));
+
+  // Gabungkan entri dengan tanggal, jenis, rezim, status, dan platform yang sama
+  const grouped = new Map();
+  rows.forEach(e=>{
+    const key = groupKey(e);
+    if(!grouped.has(key)){
+      grouped.set(key, { ...e, jumlah: 0, ids: [] });
+    }
+    const g = grouped.get(key);
+    g.jumlah += e.jumlah;
+    g.ids.push(e.id);
+  });
+  const displayRows = Array.from(grouped.values());
+  lastDisplayRows = displayRows;
+
+  const body = document.getElementById('hasilBody');
+  const empty = document.getElementById('hasilEmpty');
+  body.innerHTML = '';
+  document.getElementById('hasilCount').textContent = rows.length + ' laporan';
+
+  if(displayRows.length === 0){
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+
+  displayRows.forEach(e=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${formatTanggal(e.tanggal)}</td>
+      <td>${e.jenis}</td>
+      <td>${e.rezim}</td>
+      <td>${e.jumlah}</td>
+      <td><span class="tag ${statusTagClass(e.status)}">${e.status}</span></td>
+      <td><span class="${platformClass(e.platform)}">${e.platform}</span></td>
+      <td><button class="del-btn" data-ids="${e.ids.join(',')}">Hapus</button></td>
+    `;
+    body.appendChild(tr);
+  });
+
+  body.querySelectorAll('.del-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const ids = btn.dataset.ids.split(',');
+      const msg = ids.length > 1
+        ? `Baris ini gabungan dari ${ids.length} entri. Hapus semuanya?`
+        : 'Hapus laporan ini?';
+      if(!confirm(msg)) return;
+      btn.disabled = true;
+      deleteEntriesFromDb(ids).catch(err=>{
+        console.error('Gagal menghapus dari Firebase', err);
+        alert('Gagal menghapus laporan. Periksa koneksi internet Anda lalu coba lagi.');
+        btn.disabled = false;
+      });
+      // renderHasil() otomatis terpanggil ulang lewat listener onSnapshot
+    });
+  });
+}
+
+function formatTanggal(iso){
+  const [y,m,d] = iso.split('-');
+  const bulan = ["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Agu","Sep","Okt","Nov","Des"];
+  return `${d} ${bulan[parseInt(m,10)-1]} ${y}`;
+}
+
+// ---------- Statistik ----------
+let chartRezim, chartStatus, chartPlatform;
+const statDari = document.getElementById('stat-dari');
+const statSampai = document.getElementById('stat-sampai');
+statDari.min = MIN_DATE;
+statSampai.min = MIN_DATE;
+statDari.addEventListener('change', renderStatistik);
+statSampai.addEventListener('change', renderStatistik);
+document.getElementById('btnStatReset').addEventListener('click', ()=>{
+  statDari.value=''; statSampai.value='';
+  renderStatistik();
+});
+
+function filteredForStat(){
+  const dari = statDari.value;
+  const sampai = statSampai.value;
+  return entries.filter(e=>{
+    if(dari && e.tanggal < dari) return false;
+    if(sampai && e.tanggal > sampai) return false;
+    return true;
+  });
+}
+
+function buildDoughnut(ctx, dataMap, colorMap){
+  if(typeof Chart === 'undefined'){
+    console.error('Chart.js gagal dimuat dari CDN.');
+    return null;
+  }
+  const labels = Object.keys(dataMap);
+  const values = Object.values(dataMap);
+  const colors = labels.map(l => colorMap[l] || '#999');
+  return new Chart(ctx, {
+    type:'doughnut',
+    data:{ labels, datasets:[{ data: values, backgroundColor: colors, borderColor:'#fff', borderWidth:2 }] },
+    options:{
+      cutout:'68%',
+      plugins:{
+        legend:{ display:false },
+        tooltip:{
+          callbacks:{
+            label: (item)=>{
+              const total = item.dataset.data.reduce((a,b)=>a+b,0);
+              const pct = total ? ((item.raw/total)*100).toFixed(1) : 0;
+              return `${item.label}: ${item.raw} (${pct}%)`;
+            }
+          }
+        }
+      },
+      responsive:true,
+      maintainAspectRatio:false
+    }
+  });
+}
+
+function renderLegend(containerId, dataMap, colorMap, total){
+  const container = document.getElementById(containerId);
+  container.innerHTML = '';
+  Object.entries(dataMap).forEach(([label, val])=>{
+    if(val === 0) return;
+    const pct = total ? ((val/total)*100).toFixed(1) : '0.0';
+    const div = document.createElement('div');
+    div.className = 'legend-item';
+    div.innerHTML = `
+      <span class="lbl"><span class="dot" style="background:${colorMap[label]||'#999'}"></span>${label}</span>
+      <span class="val">${val} · ${pct}%</span>
+    `;
+    container.appendChild(div);
+  });
+}
+
+function renderStatistik(){
+  const data = filteredForStat();
+
+  const rezimMap = {}; Object.keys(REZIM_COLORS).forEach(k=> rezimMap[k]=0);
+  const statusMap = {}; Object.keys(STATUS_COLORS).forEach(k=> statusMap[k]=0);
+  const platformMap = {}; Object.keys(PLATFORM_COLORS).forEach(k=> platformMap[k]=0);
+
+  data.forEach(e=>{
+    rezimMap[e.rezim] = (rezimMap[e.rezim]||0) + e.jumlah;
+    statusMap[e.status] = (statusMap[e.status]||0) + e.jumlah;
+    platformMap[e.platform] = (platformMap[e.platform]||0) + e.jumlah;
+  });
+
+  const totalRezim = Object.values(rezimMap).reduce((a,b)=>a+b,0);
+  const totalStatus = Object.values(statusMap).reduce((a,b)=>a+b,0);
+  const totalPlatform = Object.values(platformMap).reduce((a,b)=>a+b,0);
+  document.getElementById('totalRezim').textContent = totalRezim;
+  document.getElementById('totalStatus').textContent = totalStatus;
+  document.getElementById('totalPlatform').textContent = totalPlatform;
+
+  if(typeof Chart === 'undefined'){
+    document.querySelectorAll('.chart-wrap').forEach(w=>{
+      w.innerHTML = '<p style="text-align:center;color:var(--maroon);font-size:12.5px;padding-top:40px;">Gagal memuat pustaka grafik (Chart.js). Periksa koneksi internet lalu muat ulang halaman.</p>';
+    });
+    renderLegend('legendRezim', rezimMap, REZIM_COLORS, totalRezim);
+    renderLegend('legendPlatform', platformMap, PLATFORM_COLORS, totalPlatform);
+    renderLegend('legendStatus', statusMap, STATUS_COLORS, totalStatus);
+    return;
+  }
+
+  if(chartRezim) chartRezim.destroy();
+  if(chartPlatform) chartPlatform.destroy();
+  if(chartStatus) chartStatus.destroy();
+
+  chartRezim = buildDoughnut(document.getElementById('chartRezim').getContext('2d'), rezimMap, REZIM_COLORS);
+  chartPlatform = buildDoughnut(document.getElementById('chartPlatform').getContext('2d'), platformMap, PLATFORM_COLORS);
+  chartStatus = buildDoughnut(document.getElementById('chartStatus').getContext('2d'), statusMap, STATUS_COLORS);
+
+  renderLegend('legendRezim', rezimMap, REZIM_COLORS, totalRezim);
+  renderLegend('legendPlatform', platformMap, PLATFORM_COLORS, totalPlatform);
+  renderLegend('legendStatus', statusMap, STATUS_COLORS, totalStatus);
+}
+
+// ---------- Access Gate ----------
+function startApp(){
+  document.getElementById('accessGate').style.display = 'none';
+  document.getElementById('appRoot').classList.add('ready');
+
+  auth.signInAnonymously().then(()=>{
+    loadEntries();
+    renderHasil();
+    renderStatistik();
+  }).catch(err=>{
+    console.error('Gagal masuk ke Firebase', err);
+    updateConnBanner('warn', 'Gagal masuk ke Firebase');
+    document.getElementById('storageNote').textContent =
+      'Gagal terhubung ke Firebase. Periksa koneksi internet Anda lalu muat ulang halaman.';
+  });
+}
+
+function tryGateCode(){
+  const val = document.getElementById('gateCode').value.trim();
+  const errEl = document.getElementById('gateError');
+  if(val === ACCESS_CODE){
+    localStorage.setItem(ACCESS_FLAG_KEY, '1');
+    errEl.textContent = '';
+    startApp();
+  }else{
+    errEl.textContent = 'Kode akses salah. Coba lagi.';
+  }
+}
+
+document.getElementById('gateBtn').addEventListener('click', tryGateCode);
+document.getElementById('gateCode').addEventListener('keydown', (e)=>{
+  if(e.key === 'Enter') tryGateCode();
+});
+
+// ---------- Init ----------
+if(localStorage.getItem(ACCESS_FLAG_KEY) === '1'){
+  startApp();
+}
+</script>
+
+</body>
+</html>
