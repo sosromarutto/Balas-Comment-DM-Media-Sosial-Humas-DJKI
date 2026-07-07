@@ -474,7 +474,12 @@
             <option>Informasi Kerjasama KI</option>
             <option>Informasi Wawancara Narasumber</option>
             <option>Informasi Umum KI</option>
+            <option>Hal Lainnya</option>
           </select>
+        </div>
+        <div class="field" id="wrapKeteranganLainnya" style="display:none;">
+          <label for="f-jenis-lainnya">Keterangan Hal Lainnya</label>
+          <input type="text" id="f-jenis-lainnya" placeholder="Tulis jenis laporan yang sesuai...">
         </div>
         <div class="field">
           <label for="f-rezim">Rezim</label>
@@ -875,6 +880,22 @@ tanggalInput.min = MIN_DATE;
   tanggalInput.value = today >= MIN_DATE ? today : MIN_DATE;
 })();
 
+// ---------- Hal Lainnya ----------
+const jenisSelect = document.getElementById('f-jenis');
+const wrapKeteranganLainnya = document.getElementById('wrapKeteranganLainnya');
+const keteranganLainnyaInput = document.getElementById('f-jenis-lainnya');
+
+function toggleKeteranganLainnya(){
+  if(jenisSelect.value === 'Hal Lainnya'){
+    wrapKeteranganLainnya.style.display = 'block';
+  }else{
+    wrapKeteranganLainnya.style.display = 'none';
+    keteranganLainnyaInput.value = '';
+  }
+}
+jenisSelect.addEventListener('change', toggleKeteranganLainnya);
+toggleKeteranganLainnya();
+
 // ---------- Foto Kejadian ----------
 const fotoInput = document.getElementById('f-foto');
 const fotoPreviewWrap = document.getElementById('fotoPreviewWrap');
@@ -909,6 +930,18 @@ document.getElementById('btnSimpan').addEventListener('click', (e)=>{
   if(!tanggal){ alert('Mohon pilih tanggal terlebih dahulu.'); return; }
   if(tanggal < MIN_DATE){ alert('Tanggal input dimulai dari 1 Juli 2026.'); return; }
 
+  const jenisTerpilih = document.getElementById('f-jenis').value;
+  let jenisFinal = jenisTerpilih;
+  if(jenisTerpilih === 'Hal Lainnya'){
+    const keterangan = keteranganLainnyaInput.value.trim();
+    if(!keterangan){
+      alert('Mohon isi Keterangan Hal Lainnya terlebih dahulu.');
+      keteranganLainnyaInput.focus();
+      return;
+    }
+    jenisFinal = keterangan;
+  }
+
   const btn = e.currentTarget;
   const fotoFile = fotoInput.files[0] || null;
   btn.disabled = true;
@@ -920,7 +953,7 @@ document.getElementById('btnSimpan').addEventListener('click', (e)=>{
       btn.textContent = originalLabel;
       const entry = {
         tanggal,
-        jenis: document.getElementById('f-jenis').value,
+        jenis: jenisFinal,
         rezim: document.getElementById('f-rezim').value,
         jumlah: parseInt(document.getElementById('f-jumlah').value, 10),
         status: document.getElementById('f-status').value,
@@ -933,6 +966,7 @@ document.getElementById('btnSimpan').addEventListener('click', (e)=>{
       flashSaved();
       fotoInput.value = '';
       fotoPreviewWrap.style.display = 'none';
+      keteranganLainnyaInput.value = '';
     })
     .catch(err=>{
       console.error('Gagal menyimpan ke Firebase', err);
